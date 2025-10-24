@@ -1,0 +1,5 @@
+flask==2.3.3
+sentence-transformers==2.2.2
+torch>=1.13.0
+numpy>=1.21.0
+transformers>=4.21.0

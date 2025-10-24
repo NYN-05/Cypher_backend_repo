@@ -106,3 +106,5 @@ secrets/
 *.tmp
 
 # End of general .gitignore
+venv
+env
