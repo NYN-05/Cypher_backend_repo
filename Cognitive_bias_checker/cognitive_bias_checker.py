@@ -9,9 +9,10 @@ import time
 from datetime import datetime
 from typing import Dict, List, Tuple, Any
 from collections import defaultdict, Counter
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
+
+# Heavy visualization libraries are imported lazily inside
+# generate_bias_heatmap() to avoid slow startup on systems
+# where these packages are not required for basic bias checks.
 
 class CognitiveBiasChecker:
     """
@@ -216,20 +217,32 @@ class CognitiveBiasChecker:
         
         session_entries = self.session_data[session_id]
         
+        # Lazy-import heavy visualization libraries so the module can be
+        # used for lightweight bias detection without requiring matplotlib/seaborn
+        try:
+            import numpy as np
+            import matplotlib.pyplot as plt
+            import seaborn as sns
+        except Exception as e:
+            raise ImportError(
+                "Generating heatmaps requires numpy, matplotlib and seaborn. "
+                f"Import failed: {e}"
+            )
+
         # Create bias matrix
         users = list(set(entry['user_id'] for entry in session_entries))
         bias_types = list(self.bias_patterns.keys())
-        
+
         # Initialize matrix
         bias_matrix = np.zeros((len(users), len(bias_types)))
-        
+
         # Fill matrix with bias scores
         for entry in session_entries:
             user_idx = users.index(entry['user_id'])
             for bias_type, bias_info in entry['biases'].items():
                 bias_idx = bias_types.index(bias_type)
                 bias_matrix[user_idx][bias_idx] += bias_info['score']
-        
+
         # Create heatmap
         plt.figure(figsize=(12, 8))
         sns.heatmap(
@@ -241,7 +254,7 @@ class CognitiveBiasChecker:
             fmt='.1f',
             cbar_kws={'label': 'Bias Score'}
         )
-        
+
         plt.title(f'Cognitive Bias Heatmap - Session {session_id}')
         plt.xlabel('Bias Types')
         plt.ylabel('Team Members')

@@ -1,144 +1,336 @@
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Collaboration - Session {{ session_id }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Collaborative Idea Session - {{ session_id }}</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      body { font-family: Arial, sans-serif; max-width: 900px; margin: 24px auto; }
-      header { display:flex; justify-content:space-between; align-items:center }
-      #users, #ideas { border:1px solid #ddd; padding:12px; border-radius:6px; }
-      .idea { padding:8px; border-bottom:1px solid #eee }
-      .idea:last-child { border-bottom: none }
-      form { margin-top:12px }
-      input, button, textarea { font-size:14px }
+        /* Custom font import for a cleaner look */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+
+        /* --- Custom CSS for Glassmorphism and Background Animation --- */
+
+        /* Animated Background Layer */
+        .animated-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* A subtle, cool-toned gradient */
+            background: linear-gradient(-45deg, #a5b4fc, #818cf8, #3b82f6, #6366f1); /* More vibrant indigo/blue blend */
+            background-size: 400% 400%;
+            animation: gradientShift 12s ease infinite; /* Slightly faster animation */
+            z-index: -10;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism Effect */
+        .glass {
+            /* Semi-transparent background */
+            background-color: rgba(255, 255, 255, 0.2);
+            /* The key blur effect */
+            backdrop-filter: blur(12px); /* Slightly increased blur */
+            -webkit-backdrop-filter: blur(12px);
+            /* Light border and refined shadow for better depth */
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 
+                0 8px 32px 0 rgba(0, 0, 0, 0.1), /* Stronger outer shadow */
+                inset 0 0 10px rgba(255, 255, 255, 0.1); /* Subtle inner shadow for depth */
+            transition: all 0.3s ease; /* Enable smooth hover transitions */
+        }
+
+        /* Ensure idea items inside the glass container retain contrast */
+        .idea strong, .idea p {
+            background-color: transparent !important;
+        }
+
+        /* Adjust input field backgrounds for glass container visibility */
+        .glass input, .glass textarea {
+             background-color: rgba(255, 255, 255, 0.6) !important; /* Slightly more opaque for readability */
+        }
     </style>
-  </head>
-  <body>
-    <header>
-      <h1>Session: {{ session_id }}</h1>
-      <div>
-        <a href="/export_session?session_id={{ session_id }}">Export JSON</a>
-      </div>
-    </header>
+</head>
+<body class="min-h-screen p-4 sm:p-8 relative">
 
-    <section style="display:flex; gap:16px; margin-top:16px">
-      <div style="flex:1">
-        <h3>Users</h3>
-        <div id="users">
-          <ul id="users_list">
-            {% for u in users %}
-              <li>{{ u }}</li>
-            {% else %}
-              <li><em>No users yet</em></li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
+    <!-- Background Animation Layer -->
+    <div class="animated-background"></div>
 
-      <div style="flex:2">
-        <h3>Ideas</h3>
-        <div id="ideas">
-          <div id="ideas_list">
-            {% for idea in ideas %}
-              <div class="idea"><strong>{{ idea.user }}</strong>: {{ idea.idea }}</div>
-            {% else %}
-              <div class="idea"><em>No ideas yet</em></div>
-            {% endfor %}
-          </div>
+    <div class="max-w-7xl mx-auto z-10 relative">
+
+        <!-- Header -->
+        <header class="flex justify-between items-center py-6 border-b border-gray-200 backdrop-blur-sm">
+            <h1 class="text-3xl font-extrabold text-indigo-800 tracking-tight">
+                Idea Session: <span class="font-light text-gray-700">{{ session_id }}</span>
+            </h1>
+            <div>
+                <!-- Export Button -->
+                <a href="/export_session?session_id={{ session_id }}"
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white/70 hover:bg-white transition duration-150 ease-in-out glass hover:shadow-md">
+                    <!-- lucide-icon for download/export -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                    Export JSON
+                </a>
+            </div>
+        </header>
+        <!-- Bias alert banner (hidden by default) -->
+        <div id="bias_alert_banner" class="hidden mt-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800">
+            <strong id="bias_alert_msg">Bias Alert</strong>
+            <div id="bias_alert_prompt" class="mt-2 text-sm"></div>
         </div>
 
-        <form id="idea_form">
-          <div style="margin-top:8px">
-            <label>Username: <input id="username" type="text" required placeholder="your name"/></label>
-          </div>
-          <div style="margin-top:8px">
-            <textarea id="idea_input" rows="3" cols="60" placeholder="Type your idea here" required></textarea>
-          </div>
-          <div style="margin-top:8px">
-            <button type="submit">Submit idea</button>
-          </div>
-        </form>
-      </div>
-    </section>
+        <!-- Main Content (Users & Ideas) -->
+        <section class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-    <!-- Socket.IO client -->
+            <!-- Users Column -->
+            <div class="lg:col-span-1">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Active Users</h3>
+                <!-- Glassmorphism applied here + hover effect -->
+                <div id="users" class="glass p-4 rounded-xl shadow-lg h-auto lg:h-[300px] overflow-y-auto transition duration-300 ease-in-out hover:shadow-2xl hover:translate-y-[-2px]">
+                    <ul id="users_list" class="space-y-2">
+                        {% for u in users %}
+                            <li class="flex items-center text-sm text-gray-700">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                {{ u }}
+                            </li>
+                        {% else %}
+                            <li class="text-sm text-gray-600">
+                                <em>No users yet. Submit an idea to join!</em>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Ideas Column & Form -->
+            <div class="lg:col-span-2">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Ideas Feed</h3>
+
+                <!-- Ideas List Container - Glassmorphism applied here + hover effect -->
+                <div id="ideas" class="glass p-4 rounded-xl shadow-lg mb-6 max-h-[400px] overflow-y-auto transition duration-300 ease-in-out hover:shadow-2xl hover:translate-y-[-2px]">
+                    <div id="ideas_list">
+                        {% for idea in ideas %}
+                            <div class="idea border-b border-gray-100/50 py-3 last:border-b-0">
+                                <strong class="text-indigo-700 font-semibold text-sm">{{ idea.user }}</strong>
+                                <p class="text-gray-800 mt-0.5 text-base">{{ idea.idea }}</p>
+                            </div>
+                        {% else %}
+                            <div class="idea text-gray-600">
+                                <em>No ideas yet. Be the first to contribute!</em>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Idea Submission Form - Glassmorphism applied here + hover effect -->
+                <form id="idea_form" class="glass p-6 rounded-xl shadow-xl border border-indigo-200/50 transition duration-300 ease-in-out hover:shadow-2xl hover:translate-y-[-2px]">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-4">Contribute an Idea</h4>
+                    <div class="mb-4">
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-1">
+                            Username
+                        </label>
+                        <input id="username" type="text" required placeholder="Your name or handle"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                               aria-label="Username"/>
+                    </div>
+                    <div class="mb-6">
+                        <label for="idea_input" class="block text-sm font-medium text-gray-700 mb-1">
+                            Idea Description
+                        </label>
+                        <textarea id="idea_input" rows="3" placeholder="Type your groundbreaking idea here..." required
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                  aria-label="Idea Input"></textarea>
+                    </div>
+                    <div>
+                        <button type="submit"
+                                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-lg text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                            Submit Idea
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <!-- Socket.IO client and JavaScript Logic (Unchanged) -->
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js" integrity="" crossorigin="anonymous"></script>
     <script>
-      const sessionId = "{{ session_id }}";
-      const socket = io();
+        const sessionId = "{{ session_id }}";
+        const socket = io();
 
-      // Join the room when user provides a username
-      document.getElementById('idea_form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const username = document.getElementById('username').value.trim();
-        const idea = document.getElementById('idea_input').value.trim();
-        if (!username || !idea) return;
+        // Join the room and submit idea logic
+        document.getElementById('idea_form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const idea = document.getElementById('idea_input').value.trim();
+            if (!username || !idea) return;
 
-        // ensure we're joined (the server ignores duplicate joins)
-        socket.emit('join', { session_id: sessionId, username });
+            // ensure we're joined (the server ignores duplicate joins)
+            socket.emit('join', { session_id: sessionId, username });
 
-        // emit idea
-        socket.emit('submit_idea', { session_id: sessionId, username, idea });
+            // emit idea
+            socket.emit('submit_idea', { session_id: sessionId, username, idea });
 
-        // clear input
-        document.getElementById('idea_input').value = '';
-      });
-
-      socket.on('connect', () => {
-        console.log('connected to server, socket id', socket.id);
-      });
-
-      socket.on('session_state', (data) => {
-        // refresh users and ideas
-        const usersList = document.getElementById('users_list');
-        usersList.innerHTML = '';
-        if (data.users && data.users.length) {
-          data.users.forEach(u => {
-            const li = document.createElement('li'); li.textContent = u; usersList.appendChild(li);
-          });
-        } else {
-          const li = document.createElement('li'); li.innerHTML = '<em>No users yet</em>'; usersList.appendChild(li);
-        }
-
-        const ideasDiv = document.getElementById('ideas_list');
-        ideasDiv.innerHTML = '';
-        if (data.ideas && data.ideas.length) {
-          data.ideas.forEach(it => {
-            const d = document.createElement('div'); d.className = 'idea'; d.innerHTML = `<strong>${escapeHtml(it.user)}</strong>: ${escapeHtml(it.idea)}`; ideasDiv.appendChild(d);
-          });
-        } else {
-          const d = document.createElement('div'); d.className='idea'; d.innerHTML = '<em>No ideas yet</em>'; ideasDiv.appendChild(d);
-        }
-      });
-
-      socket.on('new_idea', (idea) => {
-        // append idea
-        const ideasDiv = document.getElementById('ideas_list');
-        // remove placeholder if present
-        if (ideasDiv.children.length === 1 && ideasDiv.children[0].textContent.includes('No ideas')) {
-          ideasDiv.innerHTML = '';
-        }
-        const d = document.createElement('div'); d.className = 'idea'; d.innerHTML = `<strong>${escapeHtml(idea.user)}</strong>: ${escapeHtml(idea.idea)}`; ideasDiv.appendChild(d);
-      });
-
-      // small helper to avoid XSS in this simple template
-      function escapeHtml(str){
-        return (str+'').replace(/[&<>\"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; });
-      }
-
-      // on load, ask user for a name to auto-join (optional)
-      window.addEventListener('load', () => {
-        const stored = localStorage.getItem('collab_username');
-        if (stored) document.getElementById('username').value = stored;
-        document.getElementById('username').addEventListener('change', () => {
-          localStorage.setItem('collab_username', document.getElementById('username').value);
+            // clear input
+            document.getElementById('idea_input').value = '';
         });
 
-        // Auto-emit join if username filled
-        const username = document.getElementById('username').value.trim();
-        if (username) socket.emit('join', { session_id: sessionId, username });
-      });
+        socket.on('connect', () => {
+            console.log('connected to server, socket id', socket.id);
+        });
+
+        // Handler for full session state update (e.g., when joining)
+        socket.on('session_state', (data) => {
+            const usersList = document.getElementById('users_list');
+            usersList.innerHTML = '';
+            if (data.users && data.users.length) {
+                data.users.forEach(u => {
+                    // Applied Tailwind classes for active user status
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center text-sm text-gray-700'; // Updated text color for contrast
+                    li.innerHTML = `<span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>${escapeHtml(u)}`;
+                    usersList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.className = 'text-sm text-gray-600'; // Updated text color for contrast
+                li.innerHTML = '<em>No users yet. Submit an idea to join!</em>';
+                usersList.appendChild(li);
+            }
+
+            const ideasDiv = document.getElementById('ideas_list');
+            ideasDiv.innerHTML = '';
+            if (data.ideas && data.ideas.length) {
+                data.ideas.forEach(it => {
+                    const d = document.createElement('div');
+                    // Applied Tailwind classes for idea item
+                    d.className = 'idea border-b border-gray-100/50 py-3 last:border-b-0'; // Adjusted border visibility
+                    // Build inner HTML including random word and bias badges if present
+                    let inner = `<div class="flex items-start justify-between"><div>`;
+                    inner += `<strong class="text-indigo-700 font-semibold text-sm">${escapeHtml(it.user)}</strong>`;
+                    inner += `<p class="text-gray-800 mt-0.5 text-base">${escapeHtml(it.idea)}</p>`;
+                    if (it.random_word) {
+                        inner += `<p class="mt-2 text-sm text-gray-600"><span class="font-medium">Random word:</span> <span class="text-indigo-600">${escapeHtml(it.random_word)}</span></p>`;
+                    } else if (it.random_words && Array.isArray(it.random_words)) {
+                        inner += `<p class="mt-2 text-sm text-gray-600"><span class="font-medium">Random words:</span> <span class="text-indigo-600">${escapeHtml(it.random_words.join(', '))}</span></p>`;
+                        if (it.association_prompts && Array.isArray(it.association_prompts)) {
+                            inner += `<div class="mt-1 text-sm text-gray-500 italic">`;
+                            it.association_prompts.forEach((p, idx) => {
+                                inner += `<div>• ${escapeHtml(p)}</div>`;
+                            });
+                            inner += `</div>`;
+                        }
+                    }
+                    inner += `</div><div class="ml-4 text-right">`;
+                    // bias badges
+                    try {
+                        const flags = it.bias_flag || (it.bias_summary && it.bias_summary.detected_biases ? Object.keys(it.bias_summary.detected_biases) : []);
+                        if (flags && flags.length) {
+                            flags.forEach(f => {
+                                inner += `<div class="inline-block bg-red-100 text-red-700 text-xs px-2 py-1 rounded ml-1 mb-1">${escapeHtml(f.replace(/_/g,' '))}</div>`;
+                            });
+                        }
+                        if (it.bias_summary && it.bias_summary.overall_bias_score !== undefined) {
+                            inner += `<div class="text-xs text-gray-500 mt-2">Score: ${escapeHtml(String(it.bias_summary.overall_bias_score))}</div>`;
+                        }
+                    } catch(e) {
+                        // ignore
+                    }
+                    inner += `</div></div>`;
+                    d.innerHTML = inner;
+                    ideasDiv.appendChild(d);
+                });
+            } else {
+                const d = document.createElement('div');
+                d.className = 'idea text-gray-600'; // Updated text color for contrast
+                d.innerHTML = '<em>No ideas yet. Be the first to contribute!</em>';
+                ideasDiv.appendChild(d);
+            }
+        });
+
+        // Handler for single new idea (real-time update)
+        socket.on('new_idea', (idea) => {
+            const ideasDiv = document.getElementById('ideas_list');
+            // remove placeholder if present
+            if (ideasDiv.children.length === 1 && ideasDiv.children[0].textContent.includes('No ideas')) {
+                ideasDiv.innerHTML = '';
+            }
+            const d = document.createElement('div');
+            d.className = 'idea border-b border-gray-100/50 py-3 last:border-b-0';
+            let inner = `<div class="flex items-start justify-between"><div>`;
+            inner += `<strong class="text-indigo-700 font-semibold text-sm">${escapeHtml(idea.user)}</strong>`;
+            inner += `<p class="text-gray-800 mt-0.5 text-base">${escapeHtml(idea.idea)}</p>`;
+            if (idea.random_word) {
+                inner += `<p class="mt-2 text-sm text-gray-600"><span class="font-medium">Random word:</span> <span class="text-indigo-600">${escapeHtml(idea.random_word)}</span></p>`;
+            } else if (idea.random_words && Array.isArray(idea.random_words)) {
+                inner += `<p class="mt-2 text-sm text-gray-600"><span class="font-medium">Random words:</span> <span class="text-indigo-600">${escapeHtml(idea.random_words.join(', '))}</span></p>`;
+                if (idea.association_prompts && Array.isArray(idea.association_prompts)) {
+                    inner += `<div class="mt-1 text-sm text-gray-500 italic">`;
+                    idea.association_prompts.forEach((p, idx) => {
+                        inner += `<div>• ${escapeHtml(p)}</div>`;
+                    });
+                    inner += `</div>`;
+                }
+            }
+            inner += `</div><div class="ml-4 text-right">`;
+            try {
+                const flags = idea.bias_flag || (idea.bias_summary && idea.bias_summary.detected_biases ? Object.keys(idea.bias_summary.detected_biases) : []);
+                if (flags && flags.length) {
+                    flags.forEach(f => {
+                        inner += `<div class="inline-block bg-red-100 text-red-700 text-xs px-2 py-1 rounded ml-1 mb-1">${escapeHtml(f.replace(/_/g,' '))}</div>`;
+                    });
+                }
+                if (idea.bias_summary && idea.bias_summary.overall_bias_score !== undefined) {
+                    inner += `<div class="text-xs text-gray-500 mt-2">Score: ${escapeHtml(String(idea.bias_summary.overall_bias_score))}</div>`;
+                }
+            } catch(e) {}
+            inner += `</div></div>`;
+            d.innerHTML = inner;
+            ideasDiv.prepend(d);
+        });
+
+        // Listen for bias alerts from server and show banner
+        socket.on('bias_alert', (alert) => {
+            const banner = document.getElementById('bias_alert_banner');
+            const msg = document.getElementById('bias_alert_msg');
+            const prompt = document.getElementById('bias_alert_prompt');
+            if (!banner || !msg || !prompt) return;
+            msg.textContent = alert.message || 'Bias Alert';
+            prompt.textContent = alert.dynamic_prompt || '';
+            banner.classList.remove('hidden');
+            // auto-hide after 12s
+            setTimeout(()=> banner.classList.add('hidden'), 12000);
+        });
+
+        // small helper to avoid XSS in this simple template
+        function escapeHtml(str) {
+            return (str + '').replace(/[&<>\"']/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": "&#39;" }[m]; });
+        }
+
+        // Auto-join and persistence logic
+        window.addEventListener('load', () => {
+            const usernameInput = document.getElementById('username');
+            const sessionId = "{{ session_id }}";
+
+            const stored = localStorage.getItem('collab_username');
+            if (stored) usernameInput.value = stored;
+
+            usernameInput.addEventListener('change', () => {
+                localStorage.setItem('collab_username', usernameInput.value);
+            });
+
+            // Auto-emit join if username filled
+            const username = usernameInput.value.trim();
+            if (username) socket.emit('join', { session_id: sessionId, username });
+        });
     </script>
-  </body>
+</body>
 </html>

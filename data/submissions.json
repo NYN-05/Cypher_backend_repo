@@ -1,0 +1,86 @@
+[
+  {
+    "timestamp": "2025-10-25T04:35:03.162457",
+    "session_id": "1",
+    "user": "qwerty",
+    "idea": "make a web app for healt monitering",
+    "diversity_score": 1.0,
+    "bias_flag": [],
+    "bias_summary": {
+      "detected_biases": {},
+      "overall_bias_score": 0,
+      "analysis_timestamp": "2025-10-25T04:35:01.042240",
+      "text_analyzed": "make a web app for healt monitering"
+    },
+    "random_word": "dilapidates",
+    "random_words": [
+      "dilapidates",
+      "scumming",
+      "hyperinflation",
+      "undervaluations"
+    ],
+    "association_prompt": "Connect the random word 'dilapidates' to your problem. How could 'dilapidates' help solve or inspire new solutions for: 'make a web app for healt monitering'?",
+    "association_prompts": [
+      "Connect the random word 'dilapidates' to your problem. How could 'dilapidates' help solve or inspire new solutions for: 'make a web app for healt monitering'?",
+      "Connect the random word 'scumming' to your problem. How could 'scumming' help solve or inspire new solutions for: 'make a web app for healt monitering'?",
+      "Connect the random word 'hyperinflation' to your problem. How could 'hyperinflation' help solve or inspire new solutions for: 'make a web app for healt monitering'?",
+      "Connect the random word 'undervaluations' to your problem. How could 'undervaluations' help solve or inspire new solutions for: 'make a web app for healt monitering'?"
+    ]
+  },
+  {
+    "timestamp": "2025-10-25T05:17:12.743702",
+    "session_id": "1",
+    "user": "qwerty",
+    "idea": "hi",
+    "diversity_score": 1.0,
+    "bias_flag": [],
+    "bias_summary": {
+      "detected_biases": {},
+      "overall_bias_score": 0,
+      "analysis_timestamp": "2025-10-25T05:17:10.483928",
+      "text_analyzed": "hi"
+    },
+    "random_word": "alloys",
+    "random_words": [
+      "alloys",
+      "tepid",
+      "landside",
+      "plie"
+    ],
+    "association_prompt": "Connect the random word 'alloys' to your problem. How could 'alloys' help solve or inspire new solutions for: 'hi'?",
+    "association_prompts": [
+      "Connect the random word 'alloys' to your problem. How could 'alloys' help solve or inspire new solutions for: 'hi'?",
+      "Connect the random word 'tepid' to your problem. How could 'tepid' help solve or inspire new solutions for: 'hi'?",
+      "Connect the random word 'landside' to your problem. How could 'landside' help solve or inspire new solutions for: 'hi'?",
+      "Connect the random word 'plie' to your problem. How could 'plie' help solve or inspire new solutions for: 'hi'?"
+    ]
+  },
+  {
+    "timestamp": "2025-10-25T05:19:07.633305",
+    "session_id": "1",
+    "user": "qwerty",
+    "idea": "help me devlopa ai solution for solving global warming",
+    "diversity_score": 1.0,
+    "bias_flag": [],
+    "bias_summary": {
+      "detected_biases": {},
+      "overall_bias_score": 0,
+      "analysis_timestamp": "2025-10-25T05:19:05.144527",
+      "text_analyzed": "help me devlopa ai solution for solving global warming"
+    },
+    "random_word": "punitions",
+    "random_words": [
+      "punitions",
+      "leadening",
+      "tiredest",
+      "downwards"
+    ],
+    "association_prompt": "Connect the random word 'punitions' to your problem. How could 'punitions' help solve or inspire new solutions for: 'help me devlopa ai solution for solving global warming'?",
+    "association_prompts": [
+      "Connect the random word 'punitions' to your problem. How could 'punitions' help solve or inspire new solutions for: 'help me devlopa ai solution for solving global warming'?",
+      "Connect the random word 'leadening' to your problem. How could 'leadening' help solve or inspire new solutions for: 'help me devlopa ai solution for solving global warming'?",
+      "Connect the random word 'tiredest' to your problem. How could 'tiredest' help solve or inspire new solutions for: 'help me devlopa ai solution for solving global warming'?",
+      "Connect the random word 'downwards' to your problem. How could 'downwards' help solve or inspire new solutions for: 'help me devlopa ai solution for solving global warming'?"
+    ]
+  }
+]
