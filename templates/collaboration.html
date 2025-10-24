@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Collaboration - Session {{ session_id }}</title>
+    <style>
+      body { font-family: Arial, sans-serif; max-width: 900px; margin: 24px auto; }
+      header { display:flex; justify-content:space-between; align-items:center }
+      #users, #ideas { border:1px solid #ddd; padding:12px; border-radius:6px; }
+      .idea { padding:8px; border-bottom:1px solid #eee }
+      .idea:last-child { border-bottom: none }
+      form { margin-top:12px }
+      input, button, textarea { font-size:14px }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Session: {{ session_id }}</h1>
+      <div>
+        <a href="/export_session?session_id={{ session_id }}">Export JSON</a>
+      </div>
+    </header>
+
+    <section style="display:flex; gap:16px; margin-top:16px">
+      <div style="flex:1">
+        <h3>Users</h3>
+        <div id="users">
+          <ul id="users_list">
+            {% for u in users %}
+              <li>{{ u }}</li>
+            {% else %}
+              <li><em>No users yet</em></li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex:2">
+        <h3>Ideas</h3>
+        <div id="ideas">
+          <div id="ideas_list">
+            {% for idea in ideas %}
+              <div class="idea"><strong>{{ idea.user }}</strong>: {{ idea.idea }}</div>
+            {% else %}
+              <div class="idea"><em>No ideas yet</em></div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <form id="idea_form">
+          <div style="margin-top:8px">
+            <label>Username: <input id="username" type="text" required placeholder="your name"/></label>
+          </div>
+          <div style="margin-top:8px">
+            <textarea id="idea_input" rows="3" cols="60" placeholder="Type your idea here" required></textarea>
+          </div>
+          <div style="margin-top:8px">
+            <button type="submit">Submit idea</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Socket.IO client -->
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js" integrity="" crossorigin="anonymous"></script>
+    <script>
+      const sessionId = "{{ session_id }}";
+      const socket = io();
+
+      // Join the room when user provides a username
+      document.getElementById('idea_form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value.trim();
+        const idea = document.getElementById('idea_input').value.trim();
+        if (!username || !idea) return;
+
+        // ensure we're joined (the server ignores duplicate joins)
+        socket.emit('join', { session_id: sessionId, username });
+
+        // emit idea
+        socket.emit('submit_idea', { session_id: sessionId, username, idea });
+
+        // clear input
+        document.getElementById('idea_input').value = '';
+      });
+
+      socket.on('connect', () => {
+        console.log('connected to server, socket id', socket.id);
+      });
+
+      socket.on('session_state', (data) => {
+        // refresh users and ideas
+        const usersList = document.getElementById('users_list');
+        usersList.innerHTML = '';
+        if (data.users && data.users.length) {
+          data.users.forEach(u => {
+            const li = document.createElement('li'); li.textContent = u; usersList.appendChild(li);
+          });
+        } else {
+          const li = document.createElement('li'); li.innerHTML = '<em>No users yet</em>'; usersList.appendChild(li);
+        }
+
+        const ideasDiv = document.getElementById('ideas_list');
+        ideasDiv.innerHTML = '';
+        if (data.ideas && data.ideas.length) {
+          data.ideas.forEach(it => {
+            const d = document.createElement('div'); d.className = 'idea'; d.innerHTML = `<strong>${escapeHtml(it.user)}</strong>: ${escapeHtml(it.idea)}`; ideasDiv.appendChild(d);
+          });
+        } else {
+          const d = document.createElement('div'); d.className='idea'; d.innerHTML = '<em>No ideas yet</em>'; ideasDiv.appendChild(d);
+        }
+      });
+
+      socket.on('new_idea', (idea) => {
+        // append idea
+        const ideasDiv = document.getElementById('ideas_list');
+        // remove placeholder if present
+        if (ideasDiv.children.length === 1 && ideasDiv.children[0].textContent.includes('No ideas')) {
+          ideasDiv.innerHTML = '';
+        }
+        const d = document.createElement('div'); d.className = 'idea'; d.innerHTML = `<strong>${escapeHtml(idea.user)}</strong>: ${escapeHtml(idea.idea)}`; ideasDiv.appendChild(d);
+      });
+
+      // small helper to avoid XSS in this simple template
+      function escapeHtml(str){
+        return (str+'').replace(/[&<>\"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; });
+      }
+
+      // on load, ask user for a name to auto-join (optional)
+      window.addEventListener('load', () => {
+        const stored = localStorage.getItem('collab_username');
+        if (stored) document.getElementById('username').value = stored;
+        document.getElementById('username').addEventListener('change', () => {
+          localStorage.setItem('collab_username', document.getElementById('username').value);
+        });
+
+        // Auto-emit join if username filled
+        const username = document.getElementById('username').value.trim();
+        if (username) socket.emit('join', { session_id: sessionId, username });
+      });
+    </script>
+  </body>
+</html>

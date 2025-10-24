@@ -1,9 +1,13 @@
-from flask import Flask, request, jsonify
+# standard libs
+import os
+
+import threading
+from flask import Flask, request, jsonify, render_template
 from flask_socketio import SocketIO, emit, join_room
-import eventlet
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")  # CORS for any frontend
+# use eventlet as async mode explicitly
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')  # CORS for any frontend
 
 SESSION_IDEAS = {}   # session_id -> list of {"user": ..., "idea": ..., "diversity_score": ..., "bias_flag": ...}
 SESSION_USERS = {}   # session_id -> set of usernames
@@ -29,6 +33,14 @@ def handle_join(data):
     SESSION_USERS.setdefault(session_id, set()).add(user)
     emit('session_state', {"ideas": SESSION_IDEAS.get(session_id, []), "users": list(SESSION_USERS[session_id])}, room=session_id)
 
+
+@app.route('/session/<session_id>')
+def session_page(session_id):
+    # Render a simple collaboration UI using Jinja, passing initial state
+    users = list(SESSION_USERS.get(session_id, []))
+    ideas = SESSION_IDEAS.get(session_id, [])
+    return render_template('collaboration.html', session_id=session_id, users=users, ideas=ideas)
+
 @socketio.on('submit_idea')
 def handle_submit_idea(data):
     session_id = data['session_id']
@@ -42,3 +54,16 @@ def handle_submit_idea(data):
             "diversity_score": score_diversity(idea_text, SESSION_IDEAS.get(session_id, [])),
             "bias_flag": detect_bias(idea_text, SESSION_IDEAS.get(session_id, [])),
         }
+        # persist idea and notify room
+        SESSION_IDEAS.setdefault(session_id, []).append(idea_data)
+        # use socketio.emit (not plain emit) when outside an event handler thread
+        socketio.emit('new_idea', idea_data, room=session_id)
+
+    # Run the AI work in a background thread so the handler returns quickly
+    threading.Thread(target=run_ai_logic, daemon=True).start()
+
+
+if __name__ == '__main__':
+    # The monkey patch is already applied at import-time above.
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, host='0.0.0.0',debug=True, port=port)
